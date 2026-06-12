@@ -1,2 +1,43 @@
 # OOMMF-SOT-Extension
 Custom SOT (Spin-Orbit Torque) extension module for OOMMF and simulation MIF files.
+# OOMMF-SOTEvolve
+
+スピンホールナノオシレータ（SHNO）のマイクロマグネティクスシミュレーションにおいて、スピン軌道トルク（SOT）の影響を正確に評価するため、OOMMFの標準エボルバーを拡張したカスタムC++モジュールです。
+⚠️ **【注意書き】**
+本リポジトリで公開している `Oxs_SOTEvolve` モジュール（C++）およびLLG方程式の4項独立出力ロジックは、**現在まさに物理モデルの妥当性検証およびデバッグを行っている最中（進行中）**のものです。理論解や先行研究の挙動との完全な一致を確認するためのテストパターンを実行中であり、検証が完了した段階で順次アップデートを行います。
+
+##　概要 (Overview)
+本プロジェクトは、マイクロマグネティクスシミュレータ **OOMMF** の標準エボルバー（`Oxs_SpinXferEvolve`）をベースに、物理モデルをC++レベルで拡張し、**SOT（ダンピングライク項およびフィールドライク項）**を計算可能にした `Oxs_SOTEvolve` モジュールと、それを用いたSHNOシミュレーション用のMIFファイル一式を格納しています。
+
+##　主な実装・改良点 (Key Contributions)
+1. **SOT物理モデルのC++実装 (`sotevolve.cc`)**
+   - 従来のSTT（スピン注入トルク）モデルを拡張し、LLG方程式にダンピングライクSOT項、フィールドライクSOT項を組み込みました。
+   - 空間的な電流密度分布やスピン偏極方向の異方性を動的に反映できるロジックを実装しています。
+2.**LLG方程式の各項の独立出力機能（新規追加）**
+   - 物理現象の深い詳細解析やデバッグを容易にするため、**LLG方程式の4つの項（プリセッション項、ダンピング項、ダンピングライクSOT項、フ    -ィールドライクSOT項）をそれぞれ独立したトルクとして個別に出力・保存できるロジック**を独自に実装しました。これにより、各トルクが磁気    -反転や発振ダイナミクスに与える寄与度を定量的に評価可能です。 
+3. **OOMMFアーキテクチャへの適合**
+   - `OXS_EXT_REGISTER` を用いてOOMMFの拡張プラグイン（Oxs_Ext）として正しく登録。
+   - `field_like_ratio` や `sigma_rule` などのカスタムパラメータをMIFファイル側から動的に制御できる柔軟な設計にしました。
+4. **マルチフィジックスデータ連携 (`sotEvolve_beta.mif`)**
+   - 外部ツール（COMSOL等）で事前計算された不均一な電流密度分布（J）および磁場分布（H）のデータ（`.ovf`形式）をインポートし、実験環境に近い高度な結合シミュレーションを実現しました。
+
+##　今後の展望 (Future Work / Migration)
+**GPU駆動シミュレータ（mumax3）への移行**
+本モジュールにより、CPU環境（OOMMF）での物理ロジックの正当性検証は完了しました。現在は、より大規模なパラメータスイープおよび計算の高速化を目指し、このSOTモデルのロジックを、Go言語およびCUDA（GPU）ベースで動作する **mumax3** 環境へ移植・移行する作業を進めています。
+
+##　ディレクトリ構成 (Repository Structure)
+* `sotevolve.cc` / `sotevolve.h`：自作したSOT拡張エボルバーのソースコード
+* `sotEvolve_beta.mif`：SHNOシミュレーション用の設定ファイル（Tclスクリプト）
+
+## 📖 謝辞・引用元 (References & Acknowledgments)
+本プロジェクトは、米国国立標準技術研究所（NIST）が開発・提供しているオープンソースのマイクロマグネティクスシミュレータ「OOMMF」を基に拡張を行いました。素晴らしいソフトウェアを開発・維持されているコミュニティに深く感謝いたします。
+
+* **OOMMF 公式サイト:** [NIST OOMMF Project](https://math.nist.gov/oommf/)
+* **OOMMF 引用情報:**
+  > M. J. Donahue and D. G. Porter, "OOMMF User's Guide, Version 1.0", NISTIR 6376, National Institute of Standards and Technology, Gaithersburg, MD (1999).
+
+*ベースとした標準モジュール: `Oxs_SpinXferEvolve`*
+
+---
+Author:[佐藤　大生]
+所属/専攻:[近畿大学大学院 産業理工学学研究科電子情報コース / 2028年卒予定]
